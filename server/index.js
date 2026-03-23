@@ -9,7 +9,15 @@ const recipesRoutes = require('./routes/recipes');
 const uploadRoutes = require('./routes/upload');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+
+const portRaw = process.env.PORT;
+const parsedPort =
+  portRaw != null && String(portRaw).trim() !== '' ? parseInt(String(portRaw), 10) : NaN;
+const PORT = Number.isFinite(parsedPort)
+  ? parsedPort
+  : process.env.RAILWAY_ENVIRONMENT || process.env.FLY_APP_NAME
+    ? 8080
+    : 3001;
 
 // Ensure data directories exist
 const dataDir = path.join(__dirname, 'data');
