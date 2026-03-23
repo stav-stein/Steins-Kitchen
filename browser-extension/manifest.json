@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Stein's Kitchen — Recipe URL",
+  "version": "1.0.0",
+  "description": "Opens Stein's Kitchen add page with the current tab URL so you can extract the recipe.",
+  "permissions": ["activeTab", "storage"],
+  "action": {
+    "default_title": "Save recipe URL to Stein's Kitchen"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  }
+}

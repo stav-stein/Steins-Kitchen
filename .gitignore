@@ -1,0 +1,10 @@
+node_modules/
+client/node_modules/
+server/node_modules/
+.env
+client/dist/
+/server/data/recipes.json
+server/data/uploads/*
+!server/data/uploads/.gitkeep
+*.log
+.DS_Store

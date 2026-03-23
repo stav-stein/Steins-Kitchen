@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Stein's Kitchen extension</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 36rem;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        line-height: 1.5;
+      }
+      label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.35rem;
+      }
+      input[type="url"] {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 0.5rem 0.65rem;
+        font-size: 1rem;
+      }
+      button {
+        margin-top: 1rem;
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+        cursor: pointer;
+      }
+      #status {
+        margin-top: 0.75rem;
+        font-size: 0.9rem;
+        color: #1b5e20;
+      }
+      p.hint {
+        color: #444;
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Stein's Kitchen extension</h1>
+    <p class="hint">
+      Set the URL where your app runs (no trailing slash). For local dev, Vite defaults to
+      <code>http://localhost:5173</code>.
+    </p>
+    <form id="form">
+      <label for="baseUrl">App base URL</label>
+      <input id="baseUrl" name="baseUrl" type="url" placeholder="http://localhost:5173" autocomplete="off" />
+      <button type="submit">Save</button>
+    </form>
+    <p id="status" hidden></p>
+    <script src="options.js"></script>
+  </body>
+</html>
