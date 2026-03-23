@@ -5,28 +5,10 @@ import type { Recipe } from '../types/recipe';
 import { useRecipeStore } from '../store/useRecipeStore';
 import { recipeContentDir, recipeContentLang } from '../utils/recipeDirection';
 import { interpolateRecipeString, recipeViewStrings } from '../utils/recipeViewStrings';
+import { floatingActionIconBtn } from '../utils/floatingActionIconClasses';
+import { getRecipeShareUrl, recipeShareCopiedMessage, shareRecipe } from '../utils/shareRecipe';
 import { Icon } from './ui/Icon';
 import { Toast } from './ui/Toast';
-
-function formatRecipeText(recipe: Recipe): string {
-  const lines: string[] = [
-    recipe.title,
-    recipe.description || '',
-    '',
-    `Prep: ${recipe.prepTimeMinutes} min | Cook: ${recipe.cookTimeMinutes} min | Serves: ${recipe.servings}`,
-    '',
-    '— INGREDIENTS —',
-    ...recipe.ingredients.map(
-      i => `• ${i.quantity} ${i.unit} ${i.name}${i.note ? ` (${i.note})` : ''}`.trim()
-    ),
-    '',
-    '— INSTRUCTIONS —',
-    ...recipe.steps.map(s => `${s.order}. ${s.text}`),
-  ];
-  if (recipe.notes) lines.push('', `Notes: ${recipe.notes}`);
-  if (recipe.sourceUrl) lines.push('', `Source: ${recipe.sourceUrl}`);
-  return lines.join('\n');
-}
 
 interface RecipeDetailProps {
   recipe: Recipe;
@@ -108,22 +90,16 @@ export function RecipeDetail({ recipe }: RecipeDetailProps) {
   };
 
   const handleShare = async () => {
-    const text = formatRecipeText(recipe);
-    const url = `${window.location.origin}/recipe/${recipe.id}`;
-    const textWithLink = `${text}\n\n${url}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: recipe.title,
-          text,
-          url,
-        });
-      } catch {
-        // User cancelled or share failed
-      }
-    } else {
-      await navigator.clipboard.writeText(textWithLink);
-      setToast(shareStr('copied'));
+    const result = await shareRecipe(recipe, t);
+    if (result === 'clipboard') setToast(recipeShareCopiedMessage(t, recipe));
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(getRecipeShareUrl(recipe));
+      setToast(shareStr('linkCopied'));
+    } catch {
+      /* clipboard unavailable or denied */
     }
   };
 
@@ -179,16 +155,22 @@ export function RecipeDetail({ recipe }: RecipeDetailProps) {
             type="button"
             onClick={handleShare}
             aria-label={r('share')}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/70
-              backdrop-blur-md text-secondary transition-colors hover:bg-secondary hover:text-white"
+            className={floatingActionIconBtn}
           >
             <Icon name="share" size={20} />
           </button>
           <button
             type="button"
+            onClick={handleCopyLink}
+            aria-label={shareStr('copyLink')}
+            className={floatingActionIconBtn}
+          >
+            <Icon name="link" size={20} />
+          </button>
+          <button
+            type="button"
             onClick={() => toggleFavorite(recipe.id)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/70
-              backdrop-blur-md text-secondary transition-colors hover:bg-secondary hover:text-white"
+            className={floatingActionIconBtn}
           >
             <Icon name="favorite" filled={recipe.isFavorite} size={20} />
           </button>
@@ -348,15 +330,24 @@ export function RecipeDetail({ recipe }: RecipeDetailProps) {
 
         {/* Action Buttons */}
         <div dir={contentDir} lang={contentLang} className="flex flex-col gap-3">
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={handleShare}
               className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-full
-                border border-outline text-on-surface font-label font-bold uppercase tracking-wider text-xs
-                hover:bg-surface-container transition-colors"
+                border border-primary/45 text-primary font-label font-bold uppercase tracking-wider text-xs
+                hover:bg-primary-fixed/35 transition-colors"
             >
               <Icon name="share" size={18} />
               {r('share')}
+            </button>
+            <button
+              onClick={handleCopyLink}
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-full
+                border border-primary/45 text-primary font-label font-bold uppercase tracking-wider text-xs
+                hover:bg-primary-fixed/35 transition-colors"
+            >
+              <Icon name="link" size={18} />
+              {shareStr('copyLink')}
             </button>
             <button
               onClick={handleMarkCooked}

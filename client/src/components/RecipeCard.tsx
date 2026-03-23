@@ -1,9 +1,14 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import type { Recipe } from '../types/recipe';
 import { useRecipeStore } from '../store/useRecipeStore';
 import { recipeContentDir, recipeContentLang } from '../utils/recipeDirection';
+import { recipeViewStrings } from '../utils/recipeViewStrings';
+import { floatingActionIconBtn } from '../utils/floatingActionIconClasses';
+import { getRecipeShareUrl, recipeShareCopiedMessage, shareRecipe } from '../utils/shareRecipe';
 import { Icon } from './ui/Icon';
+import { Toast } from './ui/Toast';
 
 const CATEGORY_COLORS: Record<string, string> = {
   breakfast: 'bg-tertiary-fixed-dim text-on-tertiary-fixed',
@@ -33,16 +38,34 @@ export function RecipeCard({ recipe, size = 'md' }: RecipeCardProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const toggleFavorite = useRecipeStore(s => s.toggleFavorite);
+  const [toast, setToast] = useState<string | null>(null);
 
   const totalTime = (recipe.prepTimeMinutes || 0) + (recipe.cookTimeMinutes || 0);
   const contentDir = recipeContentDir(recipe.language);
   const contentLang = recipeContentLang(recipe.language);
+  const { r, shareStr } = recipeViewStrings(t, contentLang);
   const gradientIdx = recipe.id.charCodeAt(0) % GRADIENT_BG.length;
   const tagColor = CATEGORY_COLORS[recipe.tags?.[0]?.toLowerCase()] || CATEGORY_COLORS.dinner;
 
   const handleFav = (e: React.MouseEvent) => {
     e.stopPropagation();
     toggleFavorite(recipe.id);
+  };
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const result = await shareRecipe(recipe, t);
+    if (result === 'clipboard') setToast(recipeShareCopiedMessage(t, recipe));
+  };
+
+  const handleCopyLink = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(getRecipeShareUrl(recipe));
+      setToast(shareStr('linkCopied'));
+    } catch {
+      /* clipboard unavailable or denied */
+    }
   };
 
   return (
@@ -66,16 +89,31 @@ export function RecipeCard({ recipe, size = 'md' }: RecipeCardProps) {
           </div>
         )}
 
-        {/* Favorite button */}
-        <button
-          type="button"
-          onClick={handleFav}
-          className="absolute top-3 end-3 flex h-10 w-10 shrink-0 items-center justify-center
-            rounded-full bg-white/70 backdrop-blur-md text-secondary transition-colors
-            hover:bg-secondary hover:text-white active:scale-90"
-        >
-          <Icon name="favorite" filled={recipe.isFavorite} size={18} />
-        </button>
+        <div className="absolute top-3 end-3 flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={handleFav}
+            className={floatingActionIconBtn}
+          >
+            <Icon name="favorite" filled={recipe.isFavorite} size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={handleShare}
+            aria-label={r('share')}
+            className={floatingActionIconBtn}
+          >
+            <Icon name="share" size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={handleCopyLink}
+            aria-label={shareStr('copyLink')}
+            className={floatingActionIconBtn}
+          >
+            <Icon name="link" size={18} />
+          </button>
+        </div>
 
         {/* Tags */}
         {recipe.tags?.length > 0 && (
@@ -110,6 +148,8 @@ export function RecipeCard({ recipe, size = 'md' }: RecipeCardProps) {
           {t(`recipe.${recipe.difficulty}`)}
         </p>
       </div>
+
+      {toast && <Toast message={toast} onDone={() => setToast(null)} />}
     </div>
   );
 }

@@ -162,7 +162,10 @@
     "noValidUrlsInRows": "No valid URLs. Fix or remove invalid rows."
   },
   "share": {
-    "copied": "Recipe copied to clipboard!",
+    "blurb": "Here is {{title}} from Stein's Kitchen: {{url}}",
+    "copied": "Link copied to clipboard!",
+    "copyLink": "Copy link",
+    "linkCopied": "Link copied!",
     "shareTitle": "Check out this recipe"
   }
 }

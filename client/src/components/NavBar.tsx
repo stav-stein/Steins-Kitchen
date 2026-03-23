@@ -24,7 +24,7 @@ export function NavBar() {
             transition-all duration-200 active:scale-90 select-none
             ${isActive
               ? 'bg-primary-fixed text-primary'
-              : 'text-on-surface-variant hover:text-secondary'
+              : 'text-on-surface-variant hover:text-primary'
             }`
           }
         >
