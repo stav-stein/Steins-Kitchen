@@ -338,7 +338,6 @@ export function RecipeForm({
             <option value="en">{t('form.english')}</option>
             <option value="he">{t('form.hebrew')}</option>
           </select>
-          <p className="mt-1.5 text-xs text-on-surface-variant leading-snug">{t('form.languageHint')}</p>
         </div>
       </div>
 

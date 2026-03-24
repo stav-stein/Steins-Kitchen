@@ -6,6 +6,7 @@ import { RecipeForm } from '../components/RecipeForm';
 import type { RecipeExtraction } from '../types/recipe';
 import { Spinner } from '../components/ui/Spinner';
 import { Icon } from '../components/ui/Icon';
+import { exitRecipeEditor } from '../utils/navigation';
 
 export function EditRecipePage() {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +16,7 @@ export function EditRecipePage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [editorPageDir, setEditorPageDir] = useState<'rtl' | 'ltr'>('rtl');
 
   useEffect(() => {
     if (recipes.length === 0) {
@@ -45,7 +47,7 @@ export function EditRecipePage() {
     setSaving(true);
     try {
       await updateRecipe(recipe.id, data);
-      navigate(`/recipe/${recipe.id}`);
+      exitRecipeEditor(navigate, recipe.id);
     } catch (err) {
       const message =
         err instanceof Error && err.message.trim()
@@ -58,28 +60,56 @@ export function EditRecipePage() {
 
   return (
     <div className="px-6 pt-6 pb-10">
-      <div className="flex items-center gap-3 mb-6">
+      <div className="mb-6 flex items-center gap-3" dir="ltr">
         <button
           type="button"
-          onClick={() => navigate(`/recipe/${recipe.id}`, { replace: true })}
-          className="p-2 rounded-full bg-surface-container text-on-surface hover:bg-surface-container-high"
+          onClick={() => exitRecipeEditor(navigate, recipe.id)}
+          className="inline-flex shrink-0 items-center justify-center rounded-full bg-surface-container p-2 text-on-surface hover:bg-surface-container-high"
+          aria-label={t('add.back')}
         >
-          <Icon name="arrow_back" size={20} />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width={20}
+            height={20}
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="block shrink-0 leading-none"
+            aria-hidden
+          >
+            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+          </svg>
         </button>
-        <h2 className="font-headline text-2xl italic text-on-background">
-          {t('recipe.edit')} Recipe
-        </h2>
-      </div>
-      {saveError ? (
-        <div
-          className="mb-4 flex gap-2 rounded-xl border border-error/40 bg-error/10 px-4 py-3 text-sm text-error"
-          role="alert"
-        >
-          <Icon name="error" size={20} className="shrink-0 mt-0.5" />
-          <span>{saveError}</span>
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <h2 className="font-headline min-w-0 truncate text-2xl italic text-on-background">
+            {t('recipe.editPageTitle')}
+          </h2>
+          <button
+            type="button"
+            onClick={() => setEditorPageDir(d => (d === 'rtl' ? 'ltr' : 'rtl'))}
+            className="shrink-0 rounded-full border border-outline-variant/40 bg-surface-container px-3 py-1.5
+              text-xs font-bold uppercase tracking-wider text-on-surface hover:bg-surface-container-high"
+            aria-label={
+              editorPageDir === 'rtl'
+                ? t('recipe.editorLayoutAriaToLtr')
+                : t('recipe.editorLayoutAriaToRtl')
+            }
+          >
+            {editorPageDir === 'rtl' ? t('recipe.editorLayoutEn') : t('recipe.editorLayoutHe')}
+          </button>
         </div>
-      ) : null}
-      <RecipeForm initial={recipe} onSave={handleSave} saving={saving} />
+      </div>
+      <div dir={editorPageDir}>
+        {saveError ? (
+          <div
+            className="mb-4 flex gap-2 rounded-xl border border-error/40 bg-error/10 px-4 py-3 text-sm text-error"
+            role="alert"
+          >
+            <Icon name="error" size={20} className="mt-0.5 shrink-0" />
+            <span>{saveError}</span>
+          </div>
+        ) : null}
+        <RecipeForm initial={recipe} onSave={handleSave} saving={saving} />
+      </div>
     </div>
   );
 }
