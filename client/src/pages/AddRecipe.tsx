@@ -87,6 +87,7 @@ export function AddRecipe() {
   const [processingImage, setProcessingImage] = useState(false);
 
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [batchRunning, setBatchRunning] = useState(false);
   const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
   const [batchResults, setBatchResults] = useState<BatchResultItem[] | null>(null);
@@ -323,13 +324,18 @@ export function AddRecipe() {
   };
 
   const handleSave = async (data: RecipeExtraction) => {
+    setSaveError('');
     setSaving(true);
     try {
       const { imageCandidates: _ic, ...clean } = data;
       const recipe = await saveRecipe(clean, source);
       navigate(`/recipe/${recipe.id}`);
-    } catch {
-      alert(t('errors.saveFailed'));
+    } catch (err) {
+      const message =
+        err instanceof Error && err.message.trim()
+          ? err.message
+          : t('errors.saveFailed');
+      setSaveError(message);
       setSaving(false);
     }
   };
@@ -362,15 +368,16 @@ export function AddRecipe() {
 
   if (stage === 'preview' && extracted) {
     return (
-      <div className="px-6 pt-6">
-        <div className="flex items-center gap-3 mb-6">
+      <div className="pt-6">
+        <div className="mb-6 flex items-center gap-3">
           <button
             type="button"
             onClick={() => {
               setStage('input');
               setExtracted(null);
+              setSaveError('');
             }}
-            className="p-2 rounded-full bg-surface-container text-on-surface hover:bg-surface-container-high"
+            className="rounded-full bg-surface-container p-2 text-on-surface hover:bg-surface-container-high"
           >
             <Icon name="arrow_back" size={20} />
           </button>
@@ -379,35 +386,47 @@ export function AddRecipe() {
           </h2>
         </div>
 
-        <div className="p-4 bg-primary-fixed/30 rounded-xl mb-6 flex items-center gap-3">
-          <Icon name="auto_awesome" className="text-primary shrink-0" size={20} />
-          <p className="text-sm text-on-surface-variant">
-            {source === 'image' ? t('add.previewHintScreenshot') : t('add.previewHintUrl')}
-          </p>
-        </div>
+        <div className="lg:mx-auto lg:max-w-3xl">
+          <div className="mb-6 flex items-center gap-3 rounded-xl bg-primary-fixed/30 p-4 lg:rounded-2xl">
+            <Icon name="auto_awesome" className="shrink-0 text-primary" size={20} />
+            <p className="text-sm text-on-surface-variant">
+              {source === 'image' ? t('add.previewHintScreenshot') : t('add.previewHintUrl')}
+            </p>
+          </div>
 
-        <RecipeForm
-          initial={extracted}
-          onSave={handleSave}
-          saving={saving}
-          submitLabel={t('add.saveButton')}
-          urlImageChoices={
-            source === 'url' && extracted.imageCandidates && extracted.imageCandidates.length > 0
-              ? extracted.imageCandidates
-              : undefined
-          }
-        />
+          {saveError ? (
+            <div
+              className="mb-4 flex gap-2 rounded-xl border border-error/40 bg-error/10 px-4 py-3 text-sm text-error"
+              role="alert"
+            >
+              <Icon name="error" size={20} className="mt-0.5 shrink-0" />
+              <span>{saveError}</span>
+            </div>
+          ) : null}
+
+          <RecipeForm
+            initial={extracted}
+            onSave={handleSave}
+            saving={saving}
+            submitLabel={t('add.saveButton')}
+            urlImageChoices={
+              source === 'url' && extracted.imageCandidates && extracted.imageCandidates.length > 0
+                ? extracted.imageCandidates
+                : undefined
+            }
+          />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="px-6 pt-6">
-      <h2 className="font-headline text-3xl italic text-on-background mb-6">
+    <div className="pt-6 pb-2 lg:pb-6">
+      <h2 className="mb-6 font-headline text-3xl italic text-on-background lg:text-center">
         {t('add.title')}
       </h2>
 
-      <div className="flex bg-surface-container rounded-2xl p-1 mb-8 gap-1">
+      <div className="mb-8 flex gap-1 rounded-2xl bg-surface-container p-1 lg:mx-auto lg:max-w-2xl">
         {tabs.map(({ key, label, icon }) => (
           <button
             key={key}
@@ -421,6 +440,7 @@ export function AddRecipe() {
               setTab(key);
               setUrlError('');
               setImageError('');
+              setSaveError('');
             }}
             className={`flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-xl
               font-label font-bold uppercase tracking-wider text-xs transition-all
@@ -436,8 +456,7 @@ export function AddRecipe() {
       </div>
 
       {tab === 'url' && (
-        <div className="space-y-4">
-          <p className="text-on-surface-variant text-sm">{t('add.urlIntro', { max: MAX_BATCH })}</p>
+        <div className="space-y-4 lg:mx-auto lg:max-w-2xl">
           <p className="text-on-surface-variant text-xs">{t('add.bulkMaxNote', { max: MAX_BATCH })}</p>
 
           <div className="space-y-3">
@@ -465,7 +484,7 @@ export function AddRecipe() {
                     disabled={batchRunning}
                     className="w-full ps-10 pe-3 py-3.5 rounded-xl bg-surface-container border border-outline-variant
                       text-on-surface placeholder-on-surface-variant/50 focus:outline-none focus:ring-2
-                      focus:ring-primary focus:border-transparent text-sm font-body"
+                      focus:ring-primary focus:border-transparent text-base md:text-sm font-body"
                   />
                 </div>
                 {urlRows.length > 1 && (
@@ -493,7 +512,7 @@ export function AddRecipe() {
               hover:border-primary hover:bg-primary-fixed/10 transition-all disabled:opacity-50"
           >
             <Icon name="add" size={20} />
-            {t('add.urlAddAnother')}
+            {t('add.urlAddAnother', { max: MAX_BATCH })}
           </button>
 
           {urlNotice && !urlError && (
@@ -503,12 +522,6 @@ export function AddRecipe() {
             <p className="text-error text-sm flex items-center gap-1.5">
               <Icon name="error" size={16} />
               {urlError}
-            </p>
-          )}
-          {batchProgress && (
-            <p className="text-sm text-on-surface-variant flex items-center gap-2">
-              <Spinner className="scale-75" />
-              {t('add.bulkProcessing', { current: batchProgress.current, total: batchProgress.total })}
             </p>
           )}
           {batchResults && tab === 'url' && !batchRunning && (
@@ -600,7 +613,7 @@ export function AddRecipe() {
           <p className="text-on-surface-variant text-xs">{t('add.imageBatchIntro', { max: MAX_BATCH })}</p>
           <p className="text-on-surface-variant text-xs">{t('add.bulkMaxNote', { max: MAX_BATCH })}</p>
 
-          <div className="space-y-4">
+          <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0">
             {imageGroups.map((group, idx) => (
               <div
                 key={group.id}
@@ -743,12 +756,6 @@ export function AddRecipe() {
               {imageError}
             </p>
           )}
-          {batchProgress && tab === 'image' && (
-            <p className="text-sm text-on-surface-variant flex items-center gap-2">
-              <Spinner className="scale-75" />
-              {t('add.bulkProcessing', { current: batchProgress.current, total: batchProgress.total })}
-            </p>
-          )}
           {batchResults && tab === 'image' && !batchRunning && (
             <div className="rounded-xl border border-outline-variant bg-surface-container p-4 space-y-3">
               <p className="font-label font-bold text-sm text-on-background">
@@ -831,10 +838,19 @@ export function AddRecipe() {
       )}
 
       {tab === 'manual' && (
-        <div>
-          <p className="text-on-surface-variant text-sm mb-6">
+        <div className="lg:mx-auto lg:max-w-3xl">
+          <p className="mb-6 text-sm text-on-surface-variant">
             Type in your recipe manually — great for family recipes passed down from generations.
           </p>
+          {saveError ? (
+            <div
+              className="mb-4 flex gap-2 rounded-xl border border-error/40 bg-error/10 px-4 py-3 text-sm text-error"
+              role="alert"
+            >
+              <Icon name="error" size={20} className="shrink-0 mt-0.5" />
+              <span>{saveError}</span>
+            </div>
+          ) : null}
           <RecipeForm
             initial={EMPTY_EXTRACTION}
             onSave={(data) => {

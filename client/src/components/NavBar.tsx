@@ -8,12 +8,15 @@ export function NavBar() {
   const items = [
     { to: '/', icon: 'menu_book', label: t('nav.cookbook') },
     { to: '/add', icon: 'add_circle', label: t('nav.add') },
-    { to: '/discover', icon: 'auto_stories', label: t('nav.discover') },
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center
-      px-4 pb-6 pt-3 bg-white/70 backdrop-blur-xl nav-shadow rounded-t-3xl">
+    <nav
+      className="fixed bottom-0 left-0 z-50 flex w-full items-center justify-evenly rounded-t-3xl
+        border-t border-outline-variant/20 bg-white/70 px-4 pb-6 pt-3 backdrop-blur-xl nav-shadow
+        lg:bottom-6 lg:left-1/2 lg:w-auto lg:min-w-[min(100%-2rem,22rem)] lg:-translate-x-1/2 lg:rounded-full
+        lg:border lg:border-outline-variant/30 lg:px-10 lg:pb-4 lg:pt-3 lg:shadow-editorial"
+    >
       {items.map(item => (
         <NavLink
           key={item.to}

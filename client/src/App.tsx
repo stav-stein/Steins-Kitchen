@@ -1,6 +1,5 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { Shell } from './components/Shell';
-import { Discover } from './pages/Discover';
 import { Cookbook } from './pages/Cookbook';
 import { AddRecipe } from './pages/AddRecipe';
 import { RecipeDetailPage } from './pages/RecipeDetailPage';
@@ -13,7 +12,7 @@ function ShellRoutes() {
       <Routes>
         <Route path="/" element={<Cookbook />} />
         <Route path="/cookbook" element={<Cookbook />} />
-        <Route path="/discover" element={<Discover />} />
+        <Route path="/discover" element={<Navigate to="/" replace />} />
         <Route path="/add" element={<AddRecipe />} />
       </Routes>
     </Shell>

@@ -14,6 +14,7 @@ export function EditRecipePage() {
   const { recipes, loadRecipes, updateRecipe } = useRecipeStore();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   useEffect(() => {
     if (recipes.length === 0) {
@@ -40,12 +41,17 @@ export function EditRecipePage() {
   }
 
   const handleSave = async (data: RecipeExtraction) => {
+    setSaveError('');
     setSaving(true);
     try {
       await updateRecipe(recipe.id, data);
       navigate(`/recipe/${recipe.id}`);
-    } catch {
-      alert(t('errors.saveFailed'));
+    } catch (err) {
+      const message =
+        err instanceof Error && err.message.trim()
+          ? err.message
+          : t('errors.saveFailed');
+      setSaveError(message);
       setSaving(false);
     }
   };
@@ -54,7 +60,8 @@ export function EditRecipePage() {
     <div className="px-6 pt-6 pb-10">
       <div className="flex items-center gap-3 mb-6">
         <button
-          onClick={() => navigate(-1)}
+          type="button"
+          onClick={() => navigate(`/recipe/${recipe.id}`, { replace: true })}
           className="p-2 rounded-full bg-surface-container text-on-surface hover:bg-surface-container-high"
         >
           <Icon name="arrow_back" size={20} />
@@ -63,6 +70,15 @@ export function EditRecipePage() {
           {t('recipe.edit')} Recipe
         </h2>
       </div>
+      {saveError ? (
+        <div
+          className="mb-4 flex gap-2 rounded-xl border border-error/40 bg-error/10 px-4 py-3 text-sm text-error"
+          role="alert"
+        >
+          <Icon name="error" size={20} className="shrink-0 mt-0.5" />
+          <span>{saveError}</span>
+        </div>
+      ) : null}
       <RecipeForm initial={recipe} onSave={handleSave} saving={saving} />
     </div>
   );

@@ -1,0 +1,12 @@
+node_modules
+client/node_modules
+server/node_modules
+client/dist
+.env
+.git
+.DS_Store
+*.log
+browser-extension
+server/data/recipes.json
+server/data/uploads/*
+!server/data/uploads/.gitkeep

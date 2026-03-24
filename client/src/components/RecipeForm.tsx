@@ -14,6 +14,12 @@ function forFormState(initial: RecipeExtraction): RecipeExtraction {
   return { ...EMPTY_EXTRACTION, ...rest, imageUrl };
 }
 
+function inferImageModeFromUrl(imageUrl: string): 'url' | 'upload' {
+  const u = imageUrl.trim();
+  if (u.startsWith('/uploads/')) return 'upload';
+  return 'url';
+}
+
 interface RecipeFormProps {
   initial?: RecipeExtraction;
   onSave: (data: RecipeExtraction) => void;
@@ -31,7 +37,9 @@ export function RecipeForm({
 }: RecipeFormProps) {
   const { t } = useTranslation();
   const [data, setData] = useState<RecipeExtraction>(() => forFormState(initial));
-  const [imageMode, setImageMode] = useState<'url' | 'upload'>('url');
+  const [imageMode, setImageMode] = useState<'url' | 'upload'>(() =>
+    inferImageModeFromUrl(forFormState(initial).imageUrl || ''),
+  );
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const imageFileRef = useRef<HTMLInputElement>(null);
@@ -68,11 +76,18 @@ export function RecipeForm({
       const form = new FormData();
       form.append('image', file);
       const res = await fetch('/api/upload', { method: 'POST', body: form });
-      if (!res.ok) throw new Error('Upload failed');
-      const { url } = await res.json();
+      const body = await res.json().catch(() => null) as { error?: string } | null;
+      if (!res.ok) {
+        const msg = body?.error?.trim() || `Upload failed (${res.status})`;
+        throw new Error(msg);
+      }
+      const url = body && typeof body === 'object' && 'url' in body ? String((body as { url: string }).url) : '';
+      if (!url) throw new Error(t('form.imageUploadFailed'));
       set('imageUrl', url);
-    } catch {
-      setUploadError(t('form.imageUploadFailed'));
+    } catch (e) {
+      const msg =
+        e instanceof Error && e.message.trim() ? e.message : t('form.imageUploadFailed');
+      setUploadError(msg);
     } finally {
       setUploading(false);
     }
@@ -85,7 +100,7 @@ export function RecipeForm({
 
   const inputCls = `w-full px-4 py-3 rounded-xl bg-surface-container border border-outline-variant
     text-on-surface placeholder-on-surface-variant/50 focus:outline-none focus:ring-2
-    focus:ring-primary focus:border-transparent transition text-sm font-body`;
+    focus:ring-primary focus:border-transparent transition text-base md:text-sm font-body`;
   const labelCls = `block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1.5`;
   const contentDir = recipeContentDir(data.language);
   const contentLang = recipeContentLang(data.language);
@@ -175,7 +190,9 @@ export function RecipeForm({
             {imageMode === 'url' ? (
               <div className="space-y-3">
                 <input
-                  type="url"
+                  type="text"
+                  inputMode="url"
+                  autoComplete="url"
                   value={data.imageUrl || ''}
                   onChange={(e) => set('imageUrl', e.target.value)}
                   placeholder={t('form.imageUrlPlaceholder')}

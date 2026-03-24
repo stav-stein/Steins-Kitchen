@@ -1,7 +1,6 @@
 {
   "app": { "name": "Stein's Kitchen" },
   "nav": {
-    "discover": "Discover",
     "cookbook": "Cookbook",
     "add": "Add"
   },
@@ -29,7 +28,18 @@
     "emptyHint": "Add a recipe to start your collection",
     "all": "All",
     "favorites": "Favorites",
-    "recent": "Recent"
+    "recent": "Recent",
+    "cooked": "Cooked",
+    "more": "More",
+    "filterByCategory": "Browse by category",
+    "clearCategory": "Show all categories",
+    "removeCategoryFilter": "Remove category filter",
+    "closeFilters": "Close filters",
+    "emptySearch": "No recipes matching \"{{query}}\"",
+    "emptyCooked": "No cooked recipes yet. Mark a recipe as cooked from its detail page.",
+    "emptyFavorites": "No favorites yet. Tap the heart on a recipe to save it here.",
+    "emptyRecent": "Nothing added in the last 7 days.",
+    "emptyCategory": "No recipes in this category."
   },
   "add": {
     "title": "Add Recipe",
@@ -37,8 +47,7 @@
     "fromImage": "From Screenshot",
     "manual": "Manual",
     "urlPlaceholder": "Paste a recipe URL (website, Instagram, TikTok...)",
-    "urlIntro": "Add one or more links. Use + to add another row. One link opens a preview to edit before saving; several links are extracted and saved automatically (up to {{max}} unique URLs).",
-    "urlAddAnother": "Add another link",
+    "urlAddAnother": "Add another link ({{max}} max)",
     "urlRemoveRow": "Remove link",
     "urlButton": "Extract Recipe",
     "extracting": "Extracting recipe...",

@@ -7,6 +7,7 @@ import { recipeContentDir, recipeContentLang } from '../utils/recipeDirection';
 import { interpolateRecipeString, recipeViewStrings } from '../utils/recipeViewStrings';
 import { floatingActionIconBtn } from '../utils/floatingActionIconClasses';
 import { getRecipeShareUrl, recipeShareCopiedMessage, shareRecipe } from '../utils/shareRecipe';
+import { goBackOrHome } from '../utils/navigation';
 import { Icon } from './ui/Icon';
 import { Toast } from './ui/Toast';
 
@@ -112,7 +113,7 @@ export function RecipeDetail({ recipe }: RecipeDetailProps) {
   const handleDelete = async () => {
     if (!window.confirm(r('deleteConfirm'))) return;
     await deleteRecipe(recipe.id);
-    navigate(-1);
+    navigate('/');
   };
 
   const totalTime = (recipe.prepTimeMinutes || 0) + (recipe.cookTimeMinutes || 0);
@@ -143,7 +144,8 @@ export function RecipeDetail({ recipe }: RecipeDetailProps) {
 
         {/* Back button */}
         <button
-          onClick={() => navigate(-1)}
+          type="button"
+          onClick={() => goBackOrHome(navigate)}
           className="absolute top-4 start-4 bg-white/70 backdrop-blur-md p-2.5 rounded-full
             text-on-surface hover:bg-white transition-colors"
         >
@@ -151,6 +153,14 @@ export function RecipeDetail({ recipe }: RecipeDetailProps) {
         </button>
 
         <div className="absolute top-4 end-4 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => navigate(`/edit/${recipe.id}`)}
+            aria-label={r('edit')}
+            className={floatingActionIconBtn}
+          >
+            <Icon name="edit" size={20} />
+          </button>
           <button
             type="button"
             onClick={handleShare}
@@ -224,16 +234,16 @@ export function RecipeDetail({ recipe }: RecipeDetailProps) {
           className="grid grid-cols-4 gap-3 p-4 bg-surface-container-low rounded-xl mb-8"
         >
           {[
-            { icon: 'schedule', label: r('prep'), value: `${recipe.prepTimeMinutes}`, unit: r('min') },
-            { icon: 'local_fire_department', label: r('cook'), value: `${recipe.cookTimeMinutes}`, unit: r('min') },
-            { icon: 'timer', label: r('total'), value: `${totalTime}`, unit: r('min') },
-            { icon: 'people', label: r('servings'), value: `${recipe.servings}`, unit: '' },
+            { icon: 'schedule', label: r('prep'), value: `${recipe.prepTimeMinutes}` },
+            { icon: 'local_fire_department', label: r('cook'), value: `${recipe.cookTimeMinutes}` },
+            { icon: 'timer', label: r('total'), value: `${totalTime}` },
+            { icon: 'people', label: r('servings'), value: `${recipe.servings}` },
           ].map(stat => (
             <div key={stat.label} className="flex flex-col items-center text-center">
               <Icon name={stat.icon} className="text-primary mb-1" size={20} />
               <span className="font-headline text-xl text-on-background">{stat.value}</span>
               <span className="text-[10px] text-on-surface-variant uppercase tracking-wider">
-                {stat.unit || stat.label}
+                {stat.label}
               </span>
             </div>
           ))}
@@ -328,28 +338,11 @@ export function RecipeDetail({ recipe }: RecipeDetailProps) {
           </p>
         )}
 
-        {/* Action Buttons */}
-        <div dir={contentDir} lang={contentLang} className="flex flex-col gap-3">
-          <div className="flex flex-col sm:flex-row gap-3">
+        {/* Actions: primary labeled buttons, then separator, then icon-only */}
+        <div dir={contentDir} lang={contentLang} className="flex flex-col gap-3 pt-1">
+          <div className="flex flex-col sm:flex-row sm:items-stretch gap-3">
             <button
-              onClick={handleShare}
-              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-full
-                border border-primary/45 text-primary font-label font-bold uppercase tracking-wider text-xs
-                hover:bg-primary-fixed/35 transition-colors"
-            >
-              <Icon name="share" size={18} />
-              {r('share')}
-            </button>
-            <button
-              onClick={handleCopyLink}
-              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-full
-                border border-primary/45 text-primary font-label font-bold uppercase tracking-wider text-xs
-                hover:bg-primary-fixed/35 transition-colors"
-            >
-              <Icon name="link" size={18} />
-              {shareStr('copyLink')}
-            </button>
-            <button
+              type="button"
               onClick={handleMarkCooked}
               disabled={cookMarked}
               className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-full
@@ -361,9 +354,8 @@ export function RecipeDetail({ recipe }: RecipeDetailProps) {
               <Icon name={cookMarked ? 'check_circle' : 'outdoor_grill'} filled={cookMarked} size={18} />
               {cookMarked ? r('markedCooked') : r('markCooked')}
             </button>
-          </div>
-          <div className="flex gap-3">
             <button
+              type="button"
               onClick={() => navigate(`/edit/${recipe.id}`)}
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full
                 bg-surface-container text-on-surface font-label font-bold uppercase tracking-wider text-xs
@@ -372,15 +364,40 @@ export function RecipeDetail({ recipe }: RecipeDetailProps) {
               <Icon name="edit" size={16} />
               {r('edit')}
             </button>
-            <button
-              onClick={handleDelete}
-              className="flex items-center justify-center gap-2 px-5 py-3 rounded-full
-                text-error border border-error/30 font-label font-bold uppercase tracking-wider text-xs
-                hover:bg-error-container transition-colors"
-            >
-              <Icon name="delete" size={16} />
-              {r('delete')}
-            </button>
+            <span
+              className="hidden sm:block w-px shrink-0 self-stretch min-h-[2.75rem] bg-outline-variant/50 sm:my-0.5"
+              aria-hidden
+            />
+            <span className="sm:hidden w-full h-px bg-outline-variant/50 shrink-0" aria-hidden />
+            <div className="flex items-center justify-center gap-2 shrink-0 sm:ps-1">
+              <button
+                type="button"
+                onClick={handleShare}
+                aria-label={r('share')}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary/35
+                  text-primary transition-colors hover:bg-primary-fixed/35 active:scale-95"
+              >
+                <Icon name="share" size={20} />
+              </button>
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                aria-label={shareStr('copyLink')}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary/35
+                  text-primary transition-colors hover:bg-primary-fixed/35 active:scale-95"
+              >
+                <Icon name="link" size={20} />
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                aria-label={r('delete')}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-error/30
+                  text-error transition-colors hover:bg-error-container active:scale-95"
+              >
+                <Icon name="delete" size={20} />
+              </button>
+            </div>
           </div>
         </div>
       </div>
