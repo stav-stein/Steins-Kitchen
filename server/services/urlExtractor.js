@@ -144,15 +144,43 @@ function buildTextFromPage($, jsonLdRecipe) {
   return content.replace(/\s+/g, ' ').trim();
 }
 
+const FETCH_TIMEOUT_MS = 20000;
+
 async function extractFromUrl(url) {
-  const response = await fetch(url, {
-    headers: {
-      'User-Agent':
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      Accept: 'text/html,application/xhtml+xml',
-    },
-    signal: AbortSignal.timeout(15000),
-  });
+  let response;
+  try {
+    response = await fetch(url, {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+  } catch (err) {
+    const name = err && typeof err === 'object' ? err.name : '';
+    const cause =
+      err && typeof err === 'object' && err.cause && typeof err.cause === 'object'
+        ? err.cause.message || err.cause.code || ''
+        : '';
+    if (name === 'AbortError' || String(err.message || '').toLowerCase().includes('timeout')) {
+      throw new Error(
+        `Timed out loading the page (${Math.round(FETCH_TIMEOUT_MS / 1000)}s). Try again or use “From image” with a screenshot.`
+      );
+    }
+    const detail = cause ? ` ${cause}` : '';
+    throw new Error(
+      `Could not load the URL.${detail} Check the link and your network, or use “From image” with a screenshot.`
+    );
+  }
+
+  if (response.status === 402 || response.status === 403) {
+    throw new Error(
+      'That site blocked automated loading (common on some food sites and social links). Try another recipe URL, or use “From image” after opening the recipe in your browser.'
+    );
+  }
 
   if (!response.ok) {
     throw new Error(`Failed to fetch URL (HTTP ${response.status})`);

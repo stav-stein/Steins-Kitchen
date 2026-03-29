@@ -135,6 +135,10 @@
     "medium": "Medium",
     "hard": "Hard",
     "ingredients": "Ingredients",
+    "ingredientScaleGroup": "Scale amounts",
+    "ingredientScaleOne": "Original amounts (×1)",
+    "ingredientScaleTwo": "Double amounts (×2)",
+    "ingredientScaleThree": "Triple amounts (×3)",
     "instructions": "Instructions",
     "notes": "Notes",
     "share": "Share",
@@ -163,7 +167,14 @@
     "playGatherCollapse": "Hide ingredient list",
     "playStepsTitle": "Cooking steps",
     "playIngredientsCount": "{{checked}} of {{total}} ready",
-    "playGoToStep": "Go to step {{n}}"
+    "playGoToStep": "Go to step {{n}}",
+    "playStepTimerTitle": "Timer from this step",
+    "playStepTimerStart": "{{label}} timer",
+    "playStepTimerStartAria": "Start {{label}} timer",
+    "playStepTimerCancel": "Cancel",
+    "playStepTimerDone": "Time's up!",
+    "playTimerHourSuffix": " h",
+    "playTimerSecSuffix": " s"
   },
   "errors": {
     "extractFailed": "Couldn't extract the recipe. Please check the URL or try a different one.",

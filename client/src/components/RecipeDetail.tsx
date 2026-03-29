@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { Recipe } from '../types/recipe';
@@ -8,6 +8,12 @@ import { interpolateRecipeString, recipeViewStrings } from '../utils/recipeViewS
 import { floatingActionIconBtn } from '../utils/floatingActionIconClasses';
 import { getRecipeShareUrl, recipeShareCopiedMessage, shareRecipe } from '../utils/shareRecipe';
 import { goBackOrHome } from '../utils/navigation';
+import { scaleIngredientQuantity } from '../utils/scaleIngredientQuantity';
+import {
+  formatCountdownClock,
+  formatTimerButtonLabel,
+  parseStepTimerDurations,
+} from '../utils/stepTimerParse';
 import { Icon } from './ui/Icon';
 import { Toast } from './ui/Toast';
 
@@ -25,6 +31,13 @@ export function RecipeDetail({ recipe }: RecipeDetailProps) {
   const [playStepIndex, setPlayStepIndex] = useState(0);
   const [playCheckedIngredients, setPlayCheckedIngredients] = useState<Record<number, boolean>>({});
   const [gatherExpanded, setGatherExpanded] = useState(true);
+  const [ingredientMultiplier, setIngredientMultiplier] = useState<1 | 2 | 3>(1);
+  const [stepTimerEndsAt, setStepTimerEndsAt] = useState<number | null>(null);
+  const [stepTimerRemainingSec, setStepTimerRemainingSec] = useState<number | null>(null);
+
+  useEffect(() => {
+    setIngredientMultiplier(1);
+  }, [recipe.id]);
 
   const playableSteps = useMemo(() => {
     return [...recipe.steps]
@@ -33,10 +46,18 @@ export function RecipeDetail({ recipe }: RecipeDetailProps) {
   }, [recipe.steps]);
   const canPlay = playableSteps.length > 0;
 
+  const currentStepText = playableSteps[playStepIndex]?.text ?? '';
+  const stepTimerOptions = useMemo(
+    () => parseStepTimerDurations(currentStepText),
+    [currentStepText],
+  );
+
   const contentDir = recipeContentDir(recipe.language);
   const contentLang = recipeContentLang(recipe.language);
   const isRecipeRtl = contentDir === 'rtl';
   const { r, difficultyLabel, shareStr } = recipeViewStrings(t, contentLang);
+  const rTimerRef = useRef(r);
+  rTimerRef.current = r;
 
   useEffect(() => {
     if (!playMode) return;
@@ -55,6 +76,38 @@ export function RecipeDetail({ recipe }: RecipeDetailProps) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [playMode]);
+
+  useEffect(() => {
+    if (!playMode) {
+      setStepTimerEndsAt(null);
+      setStepTimerRemainingSec(null);
+    }
+  }, [playMode]);
+
+  useEffect(() => {
+    if (stepTimerEndsAt == null) {
+      setStepTimerRemainingSec(null);
+      return;
+    }
+    const tick = () => {
+      const rem = Math.max(0, Math.ceil((stepTimerEndsAt - Date.now()) / 1000));
+      if (rem <= 0) {
+        setStepTimerEndsAt(null);
+        setStepTimerRemainingSec(null);
+        setToast(rTimerRef.current('playStepTimerDone'));
+        try {
+          navigator.vibrate?.(200);
+        } catch {
+          /* no vibrate */
+        }
+        return;
+      }
+      setStepTimerRemainingSec(rem);
+    };
+    tick();
+    const id = window.setInterval(tick, 500);
+    return () => window.clearInterval(id);
+  }, [stepTimerEndsAt]);
 
   const openPlayMode = () => {
     if (!canPlay) {
@@ -76,7 +129,26 @@ export function RecipeDetail({ recipe }: RecipeDetailProps) {
   const stepProgressPct =
     playableSteps.length > 0 ? ((playStepIndex + 1) / playableSteps.length) * 100 : 0;
 
-  const closePlayMode = () => setPlayMode(false);
+  const closePlayMode = () => {
+    setStepTimerEndsAt(null);
+    setPlayMode(false);
+  };
+
+  const startStepTimer = (seconds: number) => {
+    setStepTimerEndsAt(Date.now() + seconds * 1000);
+  };
+
+  const cancelStepTimer = () => {
+    setStepTimerEndsAt(null);
+    setStepTimerRemainingSec(null);
+  };
+
+  const timerButtonLabel = (seconds: number) =>
+    formatTimerButtonLabel(seconds, {
+      hour: r('playTimerHourSuffix'),
+      min: ` ${r('min')}`,
+      sec: r('playTimerSecSuffix'),
+    });
 
   const goNext = () => {
     if (playStepIndex >= playableSteps.length - 1) {
@@ -264,9 +336,41 @@ export function RecipeDetail({ recipe }: RecipeDetailProps) {
 
         {/* Ingredients */}
         <section className="mb-8">
-          <h2 dir={contentDir} lang={contentLang} className="font-headline text-2xl italic text-on-background mb-4">
-            {r('ingredients')}
-          </h2>
+          <div
+            dir={contentDir}
+            lang={contentLang}
+            className="flex flex-wrap items-center justify-between gap-3 mb-4"
+          >
+            <h2 className="font-headline text-2xl italic text-on-background m-0">
+              {r('ingredients')}
+            </h2>
+            <div
+              className="flex items-center gap-1.5 shrink-0"
+              role="group"
+              aria-label={r('ingredientScaleGroup')}
+            >
+              {([1, 2, 3] as const).map((m) => {
+                const selected = ingredientMultiplier === m;
+                const ariaKey =
+                  m === 1 ? 'ingredientScaleOne' : m === 2 ? 'ingredientScaleTwo' : 'ingredientScaleThree';
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setIngredientMultiplier(m)}
+                    aria-pressed={selected}
+                    aria-label={r(ariaKey)}
+                    className={`min-w-[2.5rem] px-2.5 py-1.5 rounded-full font-label font-bold text-xs uppercase tracking-wider transition-colors
+                      ${selected
+                        ? 'bg-primary text-on-primary shadow-sm'
+                        : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest'}`}
+                  >
+                    ×{m}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <div dir={contentDir} lang={contentLang} className="space-y-3">
             {recipe.ingredients.map((ing, i) => (
               <div key={i} className="flex items-start gap-3 py-2 border-b border-outline-variant/40 last:border-0">
@@ -275,7 +379,13 @@ export function RecipeDetail({ recipe }: RecipeDetailProps) {
                 </div>
                 <div>
                   <span className="text-on-background font-medium">
-                    {[ing.quantity, ing.unit, ing.name].filter(Boolean).join(' ')}
+                    {[
+                      scaleIngredientQuantity(ing.quantity, ingredientMultiplier),
+                      ing.unit,
+                      ing.name,
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
                   </span>
                   {ing.note && (
                     <span className="text-on-surface-variant text-sm"> — {ing.note}</span>
@@ -481,7 +591,13 @@ export function RecipeDetail({ recipe }: RecipeDetailProps) {
                     >
                       <ul className="space-y-0.5">
                         {ingredientsInPlay.map((ing, i) => {
-                          const line = [ing.quantity, ing.unit, ing.name].filter(Boolean).join(' ');
+                          const line = [
+                            scaleIngredientQuantity(ing.quantity, ingredientMultiplier),
+                            ing.unit,
+                            ing.name,
+                          ]
+                            .filter(Boolean)
+                            .join(' ');
                           const checked = !!playCheckedIngredients[i];
                           const id = `cook-ing-${recipe.id}-${i}`;
                           return (
@@ -566,15 +682,71 @@ export function RecipeDetail({ recipe }: RecipeDetailProps) {
                   <p className="font-headline text-xl md:text-2xl italic text-on-background leading-snug">
                     {playableSteps[playStepIndex]?.text}
                   </p>
+                  {stepTimerOptions.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-outline-variant/25">
+                      <p className="text-[10px] font-label font-bold uppercase tracking-wider text-on-surface-variant mb-2">
+                        {r('playStepTimerTitle')}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {stepTimerOptions.map(opt => (
+                          <button
+                            key={opt.seconds}
+                            type="button"
+                            onClick={() => startStepTimer(opt.seconds)}
+                            className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-surface-container-lowest/80
+                              px-3 py-2 text-xs font-label font-bold uppercase tracking-wider text-primary
+                              hover:bg-primary-fixed/30 transition-colors focus:outline-none focus-visible:ring-2
+                              focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
+                            aria-label={interpolateRecipeString(r('playStepTimerStartAria'), {
+                              label: timerButtonLabel(opt.seconds),
+                            })}
+                          >
+                            <Icon name="timer" size={18} />
+                            {interpolateRecipeString(r('playStepTimerStart'), {
+                              label: timerButtonLabel(opt.seconds),
+                            })}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </section>
             </div>
 
             <div
               dir={contentDir}
-              className="flex gap-3 p-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] border-t border-outline-variant/30
-                bg-surface-container-low shrink-0"
+              className="shrink-0 border-t border-outline-variant/30 bg-surface-container-low"
             >
+              {stepTimerRemainingSec !== null && stepTimerRemainingSec > 0 && (
+                <div
+                  className="flex items-center justify-between gap-3 px-5 pt-3 pb-2"
+                  role="status"
+                  aria-live="polite"
+                  aria-atomic="true"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Icon name="timer" className="text-primary shrink-0" size={22} />
+                    <span className="font-headline text-2xl tabular-nums text-on-background tracking-tight">
+                      {formatCountdownClock(stepTimerRemainingSec)}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={cancelStepTimer}
+                    className="shrink-0 rounded-full border border-outline px-3 py-2 text-xs font-label font-bold uppercase
+                      tracking-wider text-on-surface hover:bg-surface-container transition-colors
+                      focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
+                      focus-visible:ring-offset-surface-container-low"
+                  >
+                    {r('playStepTimerCancel')}
+                  </button>
+                </div>
+              )}
+              <div
+                className={`flex gap-3 px-5 ${stepTimerRemainingSec !== null && stepTimerRemainingSec > 0 ? 'pt-1' : 'pt-3'}
+                  pb-[max(1.25rem,env(safe-area-inset-bottom))]`}
+              >
               <button
                 type="button"
                 onClick={goPrev}
@@ -607,6 +779,7 @@ export function RecipeDetail({ recipe }: RecipeDetailProps) {
                   </span>
                 )}
               </button>
+              </div>
             </div>
           </div>
         </div>

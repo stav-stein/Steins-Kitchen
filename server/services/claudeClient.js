@@ -3,12 +3,25 @@ const Anthropic = require('@anthropic-ai/sdk');
 const apiKey = (process.env.ANTHROPIC_API_KEY || '').trim();
 const client = new Anthropic({ apiKey });
 
+const DEFAULT_EXTRACTION_MODEL = 'claude-sonnet-4-20250514';
+
+const EXTRACTION_MODEL =
+  (process.env.ANTHROPIC_MODEL || '').trim() || DEFAULT_EXTRACTION_MODEL;
+
 function mapAnthropicError(err) {
   const status = err.status ?? err.statusCode;
   const msg = String(err.message || '');
   if (status === 401 || /authentication|invalid x-api-key|api.key/i.test(msg)) {
     return new Error(
       'Anthropic API key is missing or invalid. Check ANTHROPIC_API_KEY in the project root .env and restart the server.'
+    );
+  }
+  if (
+    status === 404 ||
+    (status === 400 && /model|not_found|not found/i.test(msg))
+  ) {
+    return new Error(
+      `Anthropic rejected the extraction model (${EXTRACTION_MODEL}). Set ANTHROPIC_MODEL in the project root .env to an id your key accepts — try claude-sonnet-4-20250514 or claude-sonnet-4-6 (newer keys often only allow Sonnet 4), or older snapshots like claude-3-5-sonnet-20241022 if your org still enables them — then restart the server.`
     );
   }
   return err;
@@ -82,7 +95,7 @@ async function extractRecipe(textContent, imageInput = null) {
   let response;
   try {
     response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: EXTRACTION_MODEL,
       max_tokens: 2048,
       system: SYSTEM_PROMPT,
       messages,
@@ -91,7 +104,14 @@ async function extractRecipe(textContent, imageInput = null) {
     throw mapAnthropicError(err);
   }
 
-  const text = response.content[0].text.trim();
+  const textBlock = Array.isArray(response.content)
+    ? response.content.find((b) => b && b.type === 'text')
+    : null;
+  const rawText = textBlock && typeof textBlock.text === 'string' ? textBlock.text : '';
+  const text = rawText.trim();
+  if (!text) {
+    throw new Error('No text in Claude response; try again or shorten the source content.');
+  }
 
   // Strip markdown fences if present
   const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();

@@ -134,6 +134,10 @@
     "medium": "בינוני",
     "hard": "קשה",
     "ingredients": "מצרכים",
+    "ingredientScaleGroup": "התאמת כמויות",
+    "ingredientScaleOne": "כמות מקורית (×1)",
+    "ingredientScaleTwo": "הכפלה פי 2 (×2)",
+    "ingredientScaleThree": "הכפלה פי 3 (×3)",
     "instructions": "הוראות הכנה",
     "notes": "הערות",
     "share": "שתף",
@@ -162,7 +166,14 @@
     "playGatherCollapse": "הסתר רשימת מצרכים",
     "playStepsTitle": "שלבי הבישול",
     "playIngredientsCount": "{{checked}} מתוך {{total}} מוכנים",
-    "playGoToStep": "מעבר לשלב {{n}}"
+    "playGoToStep": "מעבר לשלב {{n}}",
+    "playStepTimerTitle": "טיימר לפי ההוראות",
+    "playStepTimerStart": "טיימר {{label}}",
+    "playStepTimerStartAria": "התחל טיימר {{label}}",
+    "playStepTimerCancel": "ביטול",
+    "playStepTimerDone": "נגמר הזמן!",
+    "playTimerHourSuffix": " ש׳",
+    "playTimerSecSuffix": " שנ׳"
   },
   "errors": {
     "extractFailed": "לא ניתן לחלץ את המתכון. בדוק את הקישור או נסה קישור אחר.",

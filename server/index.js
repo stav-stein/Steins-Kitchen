@@ -49,6 +49,9 @@ const server = app.listen(PORT, host, () => {
   console.log(`🍳 Stein's Kitchen server running on http://${host}:${PORT}`);
   if (!(process.env.ANTHROPIC_API_KEY || '').trim()) {
     console.warn('⚠️  ANTHROPIC_API_KEY is empty — URL/image recipe extraction will fail.');
+  } else {
+    const m = (process.env.ANTHROPIC_MODEL || '').trim() || 'claude-sonnet-4-20250514';
+    console.log(`   Extraction model: ${m}${process.env.ANTHROPIC_MODEL?.trim() ? '' : ' (default)'}`);
   }
 });
 
